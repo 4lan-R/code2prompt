@@ -469,6 +469,7 @@ export function activate(context: vscode.ExtensionContext) {
 	const fileDisposable = vscode.commands.registerCommand('code2prompt.copyActiveFileToPrompt', copyActiveFileToPrompt);
 	const folderDisposable = vscode.commands.registerCommand('code2prompt.copyFolderToPrompt', copyFolderToPrompt);
 	context.subscriptions.push(fileDisposable, folderDisposable);
+	void copyFolderToPrompt();
 }
 
 export function deactivate() {}
