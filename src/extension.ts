@@ -433,43 +433,52 @@ function getExplorerHtml(roots: ExplorerNode[]): string {
 }
 
 async function copyFolderToPrompt(): Promise<void> {
-	const workspaceFolders = vscode.workspace.workspaceFolders ?? [];
-	if (workspaceFolders.length === 0) {
-		vscode.window.showInformationMessage('Open a workspace folder before selecting files and folders.');
-		return;
-	}
+	await vscode.commands.executeCommand('workbench.view.extension.code2prompt');
+}
 
-	const settings = getPromptSettings();
-	const roots: ExplorerNode[] = workspaceFolders.map((folder) => ({
-		name: folder.name,
-		path: folder.uri.fsPath,
-		type: 'folder',
-		children: collectExplorerChildren(folder.uri.fsPath, settings),
-	}));
-	const panel = vscode.window.createWebviewPanel(
-		'code2promptExplorer',
-		'Select Files and Folders',
-		vscode.ViewColumn.Active,
-		{ enableScripts: true }
-	);
-	panel.webview.html = getExplorerHtml(roots);
-	panel.webview.onDidReceiveMessage(async (message: { type?: string; paths?: unknown }) => {
+class FileExplorerViewProvider implements vscode.WebviewViewProvider {
+	private view?: vscode.WebviewView;
+
+	resolveWebviewView(webviewView: vscode.WebviewView): void {
+		this.view = webviewView;
+		webviewView.webview.options = { enableScripts: true };
+		this.refresh();
+		webviewView.webview.onDidReceiveMessage(async (message: { type?: string; paths?: unknown }) => {
 		if (message.type !== 'copy' || !Array.isArray(message.paths)) {
 			return;
 		}
+		const workspaceFolders = vscode.workspace.workspaceFolders ?? [];
 		const selectedPaths = message.paths.filter((filePath): filePath is string => typeof filePath === 'string');
-		const prompt = buildPromptFromSelectedFiles(selectedPaths, workspaceFolders, settings);
+		const prompt = buildPromptFromSelectedFiles(selectedPaths, workspaceFolders, getPromptSettings());
 		await vscode.env.clipboard.writeText(prompt);
 		vscode.window.showInformationMessage(`Copied ${selectedPaths.length} selected file${selectedPaths.length === 1 ? '' : 's'} to the clipboard as a prompt.`);
-		panel.dispose();
-	});
+		});
+	}
+
+	refresh(): void {
+		if (!this.view) {
+			return;
+		}
+
+		const workspaceFolders = vscode.workspace.workspaceFolders ?? [];
+		const settings = getPromptSettings();
+		const roots: ExplorerNode[] = workspaceFolders.map((folder) => ({
+			name: folder.name,
+			path: folder.uri.fsPath,
+			type: 'folder',
+			children: collectExplorerChildren(folder.uri.fsPath, settings),
+		}));
+		this.view.webview.html = getExplorerHtml(roots);
+	}
 }
 
 export function activate(context: vscode.ExtensionContext) {
 	const fileDisposable = vscode.commands.registerCommand('code2prompt.copyActiveFileToPrompt', copyActiveFileToPrompt);
 	const folderDisposable = vscode.commands.registerCommand('code2prompt.copyFolderToPrompt', copyFolderToPrompt);
-	context.subscriptions.push(fileDisposable, folderDisposable);
-	void copyFolderToPrompt();
+	const explorerProvider = new FileExplorerViewProvider();
+	const viewDisposable = vscode.window.registerWebviewViewProvider('code2prompt.fileExplorer', explorerProvider);
+	const workspaceDisposable = vscode.workspace.onDidChangeWorkspaceFolders(() => explorerProvider.refresh());
+	context.subscriptions.push(fileDisposable, folderDisposable, viewDisposable, workspaceDisposable);
 }
 
 export function deactivate() {}

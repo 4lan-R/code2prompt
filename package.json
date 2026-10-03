@@ -10,7 +10,7 @@
     "Other"
   ],
   "activationEvents": [
-    "onStartupFinished",
+    "onView:code2prompt.fileExplorer",
     "onCommand:code2prompt.copyActiveFileToPrompt",
     "onCommand:code2prompt.copyFolderToPrompt"
   ],
@@ -26,6 +26,24 @@
         "title": "Code2Prompt: Copy Folder to Prompt"
       }
     ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "code2prompt",
+          "title": "Code2Prompt",
+          "icon": "resources/code2prompt.svg"
+        }
+      ]
+    },
+    "views": {
+      "code2prompt": [
+        {
+          "id": "code2prompt.fileExplorer",
+          "name": "Files",
+          "type": "webview"
+        }
+      ]
+    },
     "configuration": {
       "title": "code2prompt",
       "properties": {
