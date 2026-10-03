@@ -9,15 +9,52 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onCommand:code2prompt.copyActiveFileToPrompt",
+    "onCommand:code2prompt.copyFolderToPrompt"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "code2prompt.helloWorld",
-        "title": "Hello World"
+        "command": "code2prompt.copyActiveFileToPrompt",
+        "title": "Code2Prompt: Copy Active File to Prompt"
+      },
+      {
+        "command": "code2prompt.copyFolderToPrompt",
+        "title": "Code2Prompt: Copy Folder to Prompt"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "code2prompt",
+      "properties": {
+        "code2prompt.ignorePatterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            ".git",
+            ".svn",
+            ".hg",
+            "node_modules",
+            "dist",
+            "build",
+            ".next",
+            ".nuxt",
+            ".cache",
+            "coverage"
+          ],
+          "description": "Folder names or paths to exclude from generated project prompts."
+        },
+        "code2prompt.maxFileSizeKb": {
+          "type": "number",
+          "default": 200,
+          "minimum": 1,
+          "description": "Maximum file size to include in a generated prompt. Larger files are truncated."
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
